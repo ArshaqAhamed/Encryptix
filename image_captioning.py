@@ -18,6 +18,7 @@ class ResNetFeatureExtractor(nn.Module):
     def forward(self, x):
         with torch.no_grad():
             features = self.resnet(x)
+            features = features.view(features.size(0), -1)  # Flatten the features
         return features
 
 # LSTM model for caption generation
@@ -30,8 +31,11 @@ class CaptionGenerator(nn.Module):
 
     def forward(self, features, captions):
         embeddings = self.embed(captions)
-        features = features.unsqueeze(1)  # Add a time dimension for concatenation
-        inputs = torch.cat((features, embeddings), 1)
+        print("Features shape:", features.shape)  # Debug print
+        print("Embeddings shape:", embeddings.shape)  # Debug print
+        features = features.unsqueeze(1).repeat(1, embeddings.size(1), 1)
+        print("Features shape after unsqueeze and repeat:", features.shape)  # Debug print
+        inputs = torch.cat((features, embeddings), 2)
         hiddens, _ = self.lstm(inputs)
         outputs = self.linear(hiddens)
         return outputs
